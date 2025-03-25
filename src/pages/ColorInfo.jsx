@@ -138,66 +138,89 @@ const ColorInfo = () => {
   return (
     <div className="min-h-screen bg-gray-50 p-4 sm:p-8">
       <div className="max-w-2xl mx-auto">
-        <h1 className="text-3xl sm:text-4xl font-bold text-center mb-6 text-gray-800">
-          Color Information
-        </h1>
-        
+      <div className="text-center mb-6">
+        <h1 className="text-3xl sm:text-4xl font-bold text-gray-800">Color Explorer</h1>
+        <p className="mt-2 text-lg sm:text-2xl text-gray-700 font-medium">
+            Find Names & Convert Codes
+        </p>
+      </div>
+        <p className="text-lg text-center text-gray-600 mb-8">
+            What’s that color called? Paste a HEX code and find out! Plus, get all color formats in one click.
+        </p>
         <form onSubmit={handleSubmit} className="mb-6">
-          <div className="flex flex-col sm:flex-row gap-3 items-stretch">
-            <div className="flex items-center gap-2 flex-1 bg-white p-1 rounded-lg border border-gray-300 focus-within:ring-2 focus-within:ring-blue-400 relative">
-              {/* Color Picker Button */}
-              <button
+        <div className="flex flex-col sm:flex-row gap-3 items-stretch">
+            <div className="flex items-center gap-2 flex-1 bg-white p-1 rounded-lg border border-gray-300 focus-within:border-gray-800 relative transition-all duration-200">
+            {/* Color Picker Button */}
+            <button
                 type="button"
                 onClick={() => setShowPicker(!showPicker)}
-                className="w-12 h-12 sm:w-14 sm:h-14 rounded-md border-2 border-gray-200 hover:border-blue-500 transition-all duration-200 flex-shrink-0 shadow-sm flex items-center justify-center"
+                className="w-12 h-12 sm:w-14 sm:h-14 rounded-md border-2 border-gray-200 hover:border-gray-800 hover:border-opacity-20 transition-all duration-200 flex-shrink-0 shadow-sm flex items-center justify-center"
                 style={{ backgroundColor: inputColor || '#ffffff' }}
                 aria-label="Open color picker"
-              >
+            >
                 <svg 
-                  className={`w-6 h-6 ${!inputColor ? 'text-gray-400' : 'text-white opacity-90'}`} 
-                  fill="none" 
-                  stroke="currentColor" 
-                  viewBox="0 0 24 24"
+                className={`w-6 h-6 ${!inputColor ? 'text-gray-400' : 'text-white opacity-90'}`} 
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
                 </svg>
-              </button>
+            </button>
 
-              {/* Custom Color Picker */}
-              {showPicker && (
+            {/* Custom Color Picker */}
+            {showPicker && (
                 <div 
-                  ref={pickerRef}
-                  className="absolute left-0 top-full mt-2 z-50 shadow-xl rounded-lg overflow-hidden"
+                ref={pickerRef}
+                className="absolute left-0 top-full mt-2 z-50 shadow-xl rounded-lg overflow-hidden"
                 >
-                  <HexColorPicker 
+                <HexColorPicker 
                     color={inputColor || '#ffffff'} 
                     onChange={setInputColor}
-                  />
-                  <div className="p-2 bg-white border-t border-gray-200 text-center">
+                />
+                <div className="p-2 bg-white border-t border-gray-200 text-center">
                     <span className="text-sm font-mono">{inputColor || '#ffffff'}</span>
-                  </div>
                 </div>
-              )}
+                </div>
+            )}
 
-              <input
+            <input
                 type="text"
                 value={inputColor}
                 onChange={(e) => setInputColor(e.target.value)}
                 placeholder="Enter HEX, RGB, HSL, or CMYK..."
-                className="flex-1 p-3 h-14 border-0 focus:ring-0 text-gray-700 placeholder-gray-400"
-              />
+                className="flex-1 p-3 h-14 border-0 focus:outline-none text-gray-700 placeholder-gray-400"
+            />
             </div>
 
             <button
-              type="submit"
-              disabled={loading}
-              className={`bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-lg transition-colors duration-200 h-14 ${
+            type="submit"
+            disabled={loading}
+            className={`bg-gray-800 hover:bg-gray-900 text-white px-4 sm:px-6 py-0 rounded-lg transition-colors duration-200 h-16 flex items-center justify-center
+                focus:outline-none focus:ring-2 focus:ring-blue-300 focus:ring-offset-2 ${
                 loading ? 'opacity-50 cursor-not-allowed' : ''
-              }`}
+                }`}
             >
-              {loading ? 'Searching...' : 'Find Color'}
+            {loading ? (
+                'Searching...'
+            ) : (
+                <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                >
+                <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
+                </svg>
+            )}
             </button>
-          </div>
+        </div>
         </form>
 
         {error && (
@@ -219,9 +242,20 @@ const ColorInfo = () => {
               }}
             />
             
-            <h2 className="text-xl sm:text-2xl font-bold mb-3 text-gray-800">
-              {colorInfo.name}
-            </h2>
+            <div className="flex items-center mb-3">
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-800">
+                {colorInfo.name}
+              </h2>
+              <button
+                onClick={() => handleCopy(colorInfo.name)}
+                className="text-gray-500 hover:text-blue-600 transition-colors p-1 rounded-full hover:bg-gray-100"
+                aria-label="Copy color name"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                </svg>
+              </button>
+            </div>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {colorFormats.map(({ label, value }) => (
@@ -233,12 +267,12 @@ const ColorInfo = () => {
                     <span className="font-medium text-gray-700">{label}</span>
                     <button
                       onClick={() => handleCopy(colorInfo[value])}
-                      className="text-blue-500 hover:text-blue-600 text-sm flex items-center gap-1 transition-colors"
+                      className="text-gray-500 hover:text-blue-600 transition-colors p-1 rounded-full hover:bg-gray-100"
+                      aria-label={`Copy ${label} value`}
                     >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
                       </svg>
-                      Copy
                     </button>
                   </div>
                   <code className="block text-sm text-gray-600 break-all mt-1">
@@ -252,11 +286,11 @@ const ColorInfo = () => {
 
         {/* Copy Notification Popup */}
         {copyNotification.visible && (
-            <div className={`fixed bottom-4 right-4 p-4 rounded-lg shadow-lg z-50 animate-fade-in-up ${
-                copyNotification.isSuccess 
-                ? 'bg-green-100 text-green-800 border border-green-200' 
-                : 'bg-red-100 text-red-800 border border-red-200'
-            }`}>
+          <div className={`fixed bottom-4 right-4 p-4 rounded-lg shadow-lg z-50 animate-fade-in-up ${
+            copyNotification.isSuccess 
+              ? 'bg-green-100 text-green-800 border border-green-200' 
+              : 'bg-red-100 text-red-800 border border-red-200'
+          }`}>
             <div className="flex items-center gap-2">
               {copyNotification.isSuccess ? (
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

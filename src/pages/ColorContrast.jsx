@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import tinycolor from "tinycolor2";
+import { motion, AnimatePresence } from "framer-motion";
 
 const ColorContrast = () => {
   const [textColor, setTextColor] = useState("#000000");
@@ -7,6 +8,67 @@ const ColorContrast = () => {
   const [contrastRatio, setContrastRatio] = useState(null);
   const [showFixOptions, setShowFixOptions] = useState(false);
   const [isCalculating, setIsCalculating] = useState(false);
+  const [copyNotification, setCopyNotification] = useState({
+    visible: false,
+    message: '',
+    isSuccess: true
+  });
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  // Animation variants
+  const fullscreenVariants = {
+    hidden: { opacity: 0, scale: 0.95 },
+    visible: { 
+      opacity: 1, 
+      scale: 1,
+      transition: { 
+        duration: 0.25,
+        ease: [0.16, 1, 0.3, 1],
+        when: "beforeChildren",
+        staggerChildren: 0.05
+      }
+    },
+    exit: { 
+      opacity: 0, 
+      scale: 0.95,
+      transition: { 
+        duration: 0.2,
+        ease: [0.7, 0, 0.84, 0]
+      } 
+    }
+  };
+
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: {
+      y: 0,
+      opacity: 1,
+      transition: {
+        duration: 0.3,
+        ease: [0.16, 1, 0.3, 1]
+      }
+    }
+  };
+
+  const overlayVariants = {
+    hidden: { opacity: 0 },
+    visible: { 
+      opacity: 1,
+      transition: { duration: 0.2 }
+    },
+    exit: { 
+      opacity: 0,
+      transition: { duration: 0.15 }
+    }
+  };
+
+  const previewVariants = {
+    hover: { 
+      scale: 1.01,
+      boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)"
+    },
+    tap: { scale: 0.99 }
+  };
 
   useEffect(() => {
     const color1 = tinycolor(textColor);
@@ -20,6 +82,36 @@ const ColorContrast = () => {
     }
     setShowFixOptions(false);
   }, [textColor, bgColor]);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === "Escape" && isFullscreen) {
+        setIsFullscreen(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isFullscreen]);
+
+  const handleCopyColor = (color) => {
+    navigator.clipboard.writeText(color).then(() => {
+      setCopyNotification({
+        visible: true,
+        message: 'Color copied!',
+        isSuccess: true
+      });
+      setTimeout(() => {
+        setCopyNotification(prev => ({ ...prev, visible: false }));
+      }, 2000);
+    }).catch(() => {
+        setCopyNotification({
+          visible: true,
+          message: 'Failed to copy',
+          isSuccess: false
+        });
+    });
+  };
 
   const getContrastRating = (ratio) => {
     if (!ratio) return { 
@@ -99,29 +191,22 @@ const ColorContrast = () => {
     let optimal = tinycolor(changingColor);
     const originalHue = optimal.toHsl().h;
     
-    // Check if already meets target
     if (tinycolor.readability(optimal, fixed) >= targetRatio) {
       return changingColor;
     }
 
-    // Determine adjustment direction
     const isFixedLight = fixed.isLight();
-    let adjustment = isFixedLight ? -15 : 15; // Darken or lighten
+    let adjustment = isFixedLight ? -15 : 15;
 
-    // Try to preserve original hue while meeting contrast
     for (let i = 0; i < 20; i++) {
       const hsl = optimal.toHsl();
-      
-      // Adjust lightness while preserving hue
       hsl.l = Math.min(1, Math.max(0, hsl.l + (adjustment/100)));
       optimal = tinycolor(hsl);
       
-      // Check contrast
       if (tinycolor.readability(optimal, fixed) >= targetRatio) {
-        // Try to find closest color that meets contrast
         for (let j = 0; j < 10; j++) {
           const newHsl = optimal.toHsl();
-          newHsl.h = originalHue; // Preserve original hue
+          newHsl.h = originalHue;
           const newColor = tinycolor(newHsl);
           
           if (tinycolor.readability(newColor, fixed) >= targetRatio) {
@@ -132,7 +217,6 @@ const ColorContrast = () => {
       }
     }
 
-    // Fallback to extreme contrast if needed
     return isFixedLight ? "#000000" : "#ffffff";
   };
 
@@ -161,6 +245,10 @@ const ColorContrast = () => {
         <h1 className="text-3xl font-bold text-center mb-6 text-gray-800">
           Color Contrast Checker
         </h1>
+        <p className="text-lg text-center text-gray-600 mb-8">  
+          Test your text-background color combo for accessibility. Get instant WCAG ratings,  
+          <span className="font-semibold"> automatic fixes</span>, and ensure your design is readable for everyone.  
+        </p>  
 
         {/* Input section */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
@@ -175,13 +263,24 @@ const ColorContrast = () => {
                 onChange={(e) => setTextColor(e.target.value)}
                 className="w-12 h-12 cursor-pointer"
               />
-              <input
-                type="text"
-                value={textColor}
-                onChange={(e) => setTextColor(e.target.value)}
-                placeholder="#000000"
-                className="flex-1 p-2 border border-gray-300 rounded-md"
-              />
+              <div className="relative flex-1">
+                <input
+                  type="text"
+                  value={textColor}
+                  onChange={(e) => setTextColor(e.target.value)}
+                  placeholder="#000000"
+                  className="w-full p-2 border border-gray-300 rounded-md pr-10 focus:border-gray-800 focus:outline-none"
+                />
+                <button
+                  onClick={() => handleCopyColor(textColor)}
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-blue-600"
+                  title="Copy color"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                  </svg>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -196,34 +295,192 @@ const ColorContrast = () => {
                 onChange={(e) => setBgColor(e.target.value)}
                 className="w-12 h-12 cursor-pointer"
               />
-              <input
-                type="text"
-                value={bgColor}
-                onChange={(e) => setBgColor(e.target.value)}
-                placeholder="#ffffff"
-                className="flex-1 p-2 border border-gray-300 rounded-md"
-              />
+              <div className="relative flex-1">
+                <input
+                  type="text"
+                  value={bgColor}
+                  onChange={(e) => setBgColor(e.target.value)}
+                  placeholder="#ffffff"
+                  className="w-full p-2 border border-gray-300 rounded-md pr-10 focus:border-gray-800 focus:outline-none"
+                />
+                <button
+                  onClick={() => handleCopyColor(bgColor)}
+                  className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-blue-600"
+                  title="Copy color"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                  </svg>
+                </button>
+              </div>
             </div>
           </div>
         </div>
 
         <h2 className="text-xl font-bold mb-2">Preview</h2>
-        {/* Preview */}
-        <div 
-          className="p-6 rounded-lg mb-6 shadow-sm transition-all"
-          style={{ 
-            backgroundColor: bgColor,
-            color: textColor,
-            border: '1px solid #e5e7eb'
-          }}
+        {/* Preview with fullscreen button */}
+        <motion.div 
+          className="relative"
+          whileHover="hover"
+          whileTap="tap"
+          variants={previewVariants}
         >
-          <h2 className="text-xl font-bold mb-2">Accessibility Matters</h2>
-          <p className="text-base">
-            Good color contrast ensures your content is readable by everyone. 
-            The Web Content Accessibility Guidelines (WCAG) recommend a minimum 
-            contrast ratio of 4.5:1 for normal text and 3:1 for large text.
-          </p>
-        </div>
+          <motion.div 
+            className="p-6 rounded-lg mb-6 shadow-sm relative cursor-pointer"
+            style={{ 
+              backgroundColor: bgColor,
+              color: textColor,
+              border: '1px solid rgba(0,0,0,0.1)'
+            }}
+            onClick={() => setIsFullscreen(true)}
+            layoutId="preview-container"
+            transition={{ type: "spring", stiffness: 400, damping: 30 }}
+          >
+            <motion.button
+              whileHover={{ scale: 1.1, backgroundColor: "rgba(0,0,0,0.3)" }}
+              whileTap={{ scale: 0.9 }}
+              className="absolute top-2 right-2 bg-black bg-opacity-20 text-white p-1 rounded-full hover:bg-opacity-30 transition"
+              title="Expand to fullscreen"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/>
+              </svg>
+            </motion.button>
+            <h2 className="text-xl font-bold mb-2">Accessibility Matters</h2>
+            <p className="text-base">
+              Good color contrast ensures your content is readable by everyone. 
+              The Web Content Accessibility Guidelines (WCAG) recommend a minimum 
+              contrast ratio of 4.5:1 for normal text and 3:1 for large text.
+            </p>
+          </motion.div>
+        </motion.div>
+
+        {/* Animated Fullscreen Overlay */}
+        <AnimatePresence>
+        {isFullscreen && (
+            <motion.div
+            className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-2 sm:p-4 touch-none"
+            initial="hidden"
+            animate="visible"
+            exit="exit"
+            variants={overlayVariants}
+            >
+            <motion.div
+                className="relative w-full h-full mx-2 my-4 p-4 sm:p-8 rounded-lg overflow-y-auto"
+                style={{ 
+                backgroundColor: bgColor,
+                color: textColor,
+                maxHeight: 'calc(100vh - 2rem)',
+                border: '1px solid rgba(0,0,0,0.1)'
+                }}
+                variants={fullscreenVariants}
+                layoutId="preview-container"
+                transition={{ type: "spring", stiffness: 400, damping: 30 }}
+            >
+                <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                onClick={() => setIsFullscreen(false)}
+                className="absolute top-2 right-2 bg-black bg-opacity-20 text-white p-1 sm:p-2 rounded-full"
+                aria-label="Close"
+                variants={itemVariants}
+                >
+                <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+                </motion.button>
+
+                <div className="h-full flex flex-col justify-start space-y-4 sm:space-y-8 pt-8">
+                <motion.h2 
+                    className="text-2xl sm:text-4xl font-bold"
+                    variants={itemVariants}
+                >
+                    Accessibility Preview
+                </motion.h2>
+                
+                <motion.p 
+                    className="text-base sm:text-xl"
+                    variants={itemVariants}
+                >
+                    This is how your color combination looks at full size. 
+                    The text should be easily readable against the background.
+                </motion.p>
+                
+                <motion.div 
+                    className="space-y-4 sm:space-y-8"
+                    variants={{
+                    hidden: { opacity: 0 },
+                    visible: {
+                        opacity: 1,
+                        transition: {
+                        staggerChildren: 0.1,
+                        delayChildren: 0.2
+                        }
+                    }
+                    }}
+                >
+                    <motion.div 
+                    className="p-4 sm:p-6 rounded-lg border border-opacity-20"
+                    style={{ borderColor: textColor }}
+                    variants={itemVariants}
+                    >
+                    <motion.p 
+                        className="text-xl sm:text-4xl font-bold mb-2 sm:mb-4"
+                        whileHover={{ x: 5 }}
+                    >
+                        Large Heading Text
+                    </motion.p>
+                    <motion.p 
+                        className="text-lg sm:text-2xl mb-2 sm:mb-4"
+                        whileHover={{ x: 5 }}
+                    >
+                        Subheading Text
+                    </motion.p>
+                    <motion.p 
+                        className="text-base sm:text-xl"
+                        whileHover={{ x: 5 }}
+                    >
+                        Body Text Example
+                    </motion.p>
+                    </motion.div>
+                    
+                    <motion.div 
+                    className="p-4 sm:p-6 rounded-lg border border-opacity-20"
+                    style={{ borderColor: textColor }}
+                    variants={itemVariants}
+                    >
+                    <motion.p 
+                        className="text-sm sm:text-lg mb-2 sm:mb-4"
+                        whileHover={{ x: 5 }}
+                    >
+                        Regular Paragraph (18px) - WCAG requires minimum 4.5:1 contrast for normal text.
+                    </motion.p>
+                    <motion.p 
+                        className="text-xs sm:text-base"
+                        whileHover={{ x: 5 }}
+                    >
+                        Small Text (16px) - For secondary information that doesn't need as much emphasis.
+                    </motion.p>
+                    </motion.div>
+                    
+                    <motion.div 
+                    className="p-4 sm:p-6 rounded-lg border border-opacity-20"
+                    style={{ borderColor: textColor }}
+                    variants={itemVariants}
+                    >
+                    <motion.p 
+                        className="text-xs sm:text-sm"
+                        whileHover={{ x: 5 }}
+                    >
+                        Fine Print (14px) - For disclaimers and legal text. Requires extra attention to contrast.
+                    </motion.p>
+                    </motion.div>
+                </motion.div>
+                </div>
+            </motion.div>
+            </motion.div>
+        )}
+        </AnimatePresence>
 
         <h2 className="text-xl font-bold mb-2">Contrast Results</h2>
 
@@ -270,7 +527,7 @@ const ColorContrast = () => {
                 Contrast Ratio
               </p>
               <p className={`text-2xl font-bold ${ratingInfo.textColorClass}`}>
-                {contrastRatio ? `${contrastRatio}:1` : "N/A"}
+                {contrastRatio ? `${contrastRatio}` : "N/A"}
               </p>
             </div>
             <div>
@@ -296,6 +553,34 @@ const ColorContrast = () => {
               Use the "Click to fix" button to automatically optimize colors for better contrast.
             </p>
           </div>
+        )}
+
+        {/* Copy Notification Popup */}
+        {copyNotification.visible && (
+          <motion.div 
+            className={`fixed bottom-4 right-4 p-4 rounded-lg shadow-lg z-50 ${
+              copyNotification.isSuccess 
+                ? 'bg-green-100 text-green-800 border border-green-200' 
+                : 'bg-red-100 text-red-800 border border-red-200'
+            }`}
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 20, opacity: 0 }}
+            transition={{ type: "spring", stiffness: 500, damping: 30 }}
+          >
+            <div className="flex items-center gap-2">
+              {copyNotification.isSuccess ? (
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              ) : (
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              )}
+              <span>{copyNotification.message}</span>
+            </div>
+          </motion.div>
         )}
       </div>
     </div>
