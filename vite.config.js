@@ -6,7 +6,8 @@ export default defineConfig({
   optimizeDeps: {
     include: [
       'color-name-list',
-      'color-convert'
+      'color-convert',
+      'quantize'
     ]
   }
 })
