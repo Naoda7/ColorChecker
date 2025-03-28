@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { HexColorPicker } from 'react-colorful';
 import quantize from 'quantize';
 import { hslToHex, hexToRgb, normalizeHex, hexToHsl } from '../utils/colorUtils';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const ImageColorExtractor = ({ onExtract, onClose }) => {
   const [image, setImage] = useState(null);
@@ -13,11 +14,17 @@ const ImageColorExtractor = ({ onExtract, onClose }) => {
   const [detectedColorCount, setDetectedColorCount] = useState(8);
   const [colorCount, setColorCount] = useState(8);
   const [extractionMode, setExtractionMode] = useState('normal');
-  const [showCopyNotification, setShowCopyNotification] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef(null);
   const modalRef = useRef(null);
   const dropAreaRef = useRef(null);
+
+  // Copy notification state matching ColorContrast.jsx
+  const [copyNotification, setCopyNotification] = useState({
+    visible: false,
+    message: '',
+    isSuccess: true
+  });
 
   const getColorDistance = useCallback((color1, color2) => {
     const [r1, g1, b1] = hexToRgb(color1);
@@ -173,11 +180,25 @@ const ImageColorExtractor = ({ onExtract, onClose }) => {
     reader.readAsDataURL(file);
   }, []);
 
-  const handleCopyColor = useCallback(() => {
-    navigator.clipboard.writeText(selectedColor);
-    setShowCopyNotification(true);
-    setTimeout(() => setShowCopyNotification(false), 2000);
-  }, [selectedColor]);
+  // Updated copy function to match ColorContrast.jsx
+  const handleCopyColor = useCallback((color) => {
+    navigator.clipboard.writeText(color).then(() => {
+      setCopyNotification({
+        visible: true,
+        message: 'Color copied!',
+        isSuccess: true
+      });
+      setTimeout(() => {
+        setCopyNotification(prev => ({ ...prev, visible: false }));
+      }, 2000);
+    }).catch(() => {
+      setCopyNotification({
+        visible: true,
+        message: 'Failed to copy',
+        isSuccess: false
+      });
+    });
+  }, []);
 
   // Drag and drop handlers
   const handleDragEnter = useCallback((e) => {
@@ -416,23 +437,17 @@ const ImageColorExtractor = ({ onExtract, onClose }) => {
                           </span>
                         </div>
                         <button
-                          onClick={handleCopyColor}
-                          className="text-blue-600 hover:text-blue-800 text-xs sm:text-sm flex items-center justify-center bg-white px-2 sm:px-3 py-1 sm:py-1.5 rounded-md border border-gray-200 hover:bg-gray-50"
+                          onClick={() => handleCopyColor(selectedColor)}
+                          className="flex items-center justify-center gap-1 px-3 py-1.5 bg-white text-gray-700 rounded-md border border-gray-300 hover:bg-gray-50 transition-colors text-sm"
+                          title="Copy color"
                         >
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-3 sm:h-4 w-3 sm:w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
                           </svg>
-                          Copy
+                          <span>Copy</span>
                         </button>
                       </div>
                     </div>
-                    {showCopyNotification && (
-                      <div className="absolute bottom-20 left-0 right-0 flex justify-center animate-fade-in">
-                        <div className="bg-green-500 text-white text-xs sm:text-sm px-3 sm:px-4 py-1 sm:py-2 rounded-md shadow-md">
-                          Color copied to clipboard!
-                        </div>
-                      </div>
-                    )}
                   </div>
                 </div>
               </div>
@@ -595,6 +610,36 @@ const ImageColorExtractor = ({ onExtract, onClose }) => {
             </div>
           )}
         </div>
+
+        {/* Copy Notification - matches ColorContrast.jsx */}
+        <AnimatePresence>
+          {copyNotification.visible && (
+            <motion.div 
+              className={`fixed bottom-4 right-4 p-4 rounded-lg shadow-lg z-50 ${
+                copyNotification.isSuccess 
+                  ? 'bg-green-100 text-green-800 border border-green-200' 
+                  : 'bg-red-100 text-red-800 border border-red-200'
+              }`}
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 20, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 500, damping: 30 }}
+            >
+              <div className="flex items-center gap-2">
+                {copyNotification.isSuccess ? (
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                ) : (
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                )}
+                <span>{copyNotification.message}</span>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
