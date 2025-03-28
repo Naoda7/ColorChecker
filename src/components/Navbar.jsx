@@ -93,7 +93,7 @@ const Navbar = () => {
               }`}
               onClick={() => setIsMenuOpen(false)}
             >
-              Color Contrast
+              Contrast Checker
             </Link>
             <Link 
               to="/color-palette" 
