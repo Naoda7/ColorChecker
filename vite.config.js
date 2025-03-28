@@ -5,7 +5,7 @@ export default defineConfig({
   plugins: [react()],
   optimizeDeps: {
     include: [
-      'color-name-list', // Tambahkan ini
+      'color-name-list',
       'color-convert'
     ]
   }

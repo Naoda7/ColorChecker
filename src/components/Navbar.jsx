@@ -34,6 +34,16 @@ const Navbar = () => {
             >
               Color Contrast
             </Link>
+            <Link 
+              to="/color-palette" 
+              className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                isActive('/color-palette') 
+                  ? 'bg-gray-900 text-white' 
+                  : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+              }`}
+            >
+              Color Palette
+            </Link>
           </div>
         </div>
       </div>
